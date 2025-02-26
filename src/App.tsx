@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Crown, Medal, Trophy, History, X } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Crown, Medal, Trophy, History, X } from "lucide-react";
 
 interface PlayerScore {
   name: string;
@@ -26,16 +26,16 @@ function App() {
   const totalRounds = 5;
 
   useEffect(() => {
-    const savedGame = localStorage.getItem('currentGame');
-    const savedHistory = localStorage.getItem('gameHistory');
-    
+    const savedGame = localStorage.getItem("currentGame");
+    const savedHistory = localStorage.getItem("gameHistory");
+
     if (savedGame) {
       const { players: savedPlayers, playerCount: savedCount } = JSON.parse(savedGame);
       setPlayers(savedPlayers);
       setPlayerCount(savedCount);
       setShowPlayerSelection(false);
     }
-    
+
     if (savedHistory) {
       setGameHistory(JSON.parse(savedHistory));
     }
@@ -43,32 +43,27 @@ function App() {
 
   useEffect(() => {
     if (playerCount > 0) {
-      localStorage.setItem('currentGame', JSON.stringify({
-        players,
-        playerCount
-      }));
+      localStorage.setItem(
+        "currentGame",
+        JSON.stringify({
+          players,
+          playerCount,
+        })
+      );
     }
   }, [players, playerCount]);
 
   useEffect(() => {
-    localStorage.setItem('gameHistory', JSON.stringify(gameHistory));
+    localStorage.setItem("gameHistory", JSON.stringify(gameHistory));
   }, [gameHistory]);
 
-  const playerOptions = [
-    'لعبين',
-    'ثلث لعبين',
-    'أربع لعبين',
-    'خمس لعبين',
-    'ستة لعبين',
-    'سبعة لعبين',
-    'ثمانية لعبين'
-  ];
+  const playerOptions = ["لعبين", "ثلث لعبين", "أربع لعبين", "خمس لعبين", "ستة لعبين", "سبعة لعبين", "ثمانية لعبين"];
 
   const handlePlayerCountSelect = (count: number) => {
     const newPlayers = Array.from({ length: count }, () => ({
-      name: '',
+      name: "",
       rounds: Array(totalRounds).fill(0),
-      total: 0
+      total: 0,
     }));
     setPlayers(newPlayers);
     setPlayerCount(count);
@@ -77,35 +72,46 @@ function App() {
     setCurrentRound(1);
   };
 
+  const isRoundComplete = (round: number, players: PlayerScore[]) => {
+    return players.every((player) => player.rounds[round - 1] !== 0);
+  };
+
+  const updateRankings = (players: PlayerScore[]) => {
+    const sortedPlayers = [...players].sort((a, b) => a.total - b.total);
+    return players.map((player) => {
+      const rank = sortedPlayers.findIndex((p) => p.name === player.name && p.total === player.total) + 1;
+      return { ...player, rank };
+    });
+  };
+
   const updateScore = (playerIndex: number, round: number, score: number) => {
-    setPlayers(prevPlayers => {
+    setPlayers((prevPlayers) => {
       const newPlayers = [...prevPlayers];
       newPlayers[playerIndex] = {
         ...newPlayers[playerIndex],
-        rounds: newPlayers[playerIndex].rounds.map((r, i) => i === round - 1 ? score : r)
+        rounds: newPlayers[playerIndex].rounds.map((r, i) => (i === round - 1 ? score : r)),
       };
-      
+
+      // Update total score
       newPlayers[playerIndex].total = newPlayers[playerIndex].rounds.reduce((acc, score, idx) => {
         return acc + (idx === totalRounds - 1 ? score * 2 : score);
       }, 0);
 
-      // Sort by lowest score first
-      const sortedPlayers = [...newPlayers].sort((a, b) => a.total - b.total);
-      sortedPlayers.forEach((player, index) => {
-        const originalIndex = newPlayers.findIndex(p => p.name === player.name && p.total === player.total);
-        newPlayers[originalIndex].rank = index + 1;
-      });
-      
+      // Only update rankings if the round is complete
+      if (isRoundComplete(round, newPlayers)) {
+        return updateRankings(newPlayers);
+      }
+
       return newPlayers;
     });
   };
 
   const updatePlayerName = (playerIndex: number, newName: string) => {
-    setPlayers(prevPlayers => {
+    setPlayers((prevPlayers) => {
       const newPlayers = [...prevPlayers];
       newPlayers[playerIndex] = {
         ...newPlayers[playerIndex],
-        name: newName
+        name: newName,
       };
       return newPlayers;
     });
@@ -115,29 +121,29 @@ function App() {
     if (players.length > 0) {
       const newHistory: GameHistory = {
         id: Date.now().toString(),
-        date: new Date().toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
+        date: new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
         }),
-        players: [...players]
+        players: [...players],
       };
-      setGameHistory(prev => [newHistory, ...prev]);
+      setGameHistory((prev) => [newHistory, ...prev]);
     }
-    
+
     setPlayers([]);
     setPlayerCount(0);
     setShowPlayerSelection(true);
     setCurrentRound(1);
     setShowRules(false);
-    localStorage.removeItem('currentGame');
+    localStorage.removeItem("currentGame");
   };
 
   const clearHistory = () => {
     setGameHistory([]);
-    localStorage.removeItem('gameHistory');
+    localStorage.removeItem("gameHistory");
   };
 
   const getRankIcon = (rank: number) => {
@@ -157,31 +163,23 @@ function App() {
     <div className="min-h-screen p-4 md:p-8">
       {/* Navigation */}
       <nav className="glass-panel p-2 md:p-4 mb-4 md:mb-8 flex justify-between md:justify-center gap-2 md:gap-4 overflow-x-auto scrollbar-hide">
-        <button 
+        <button
           className="nav-item whitespace-nowrap flex items-center gap-1 text-xs md:text-base"
-          onClick={() => setShowHistory(true)}
-        >
+          onClick={() => setShowHistory(true)}>
           <History size={16} className="md:size-18" />
           السجل
         </button>
-        <button 
-          className="nav-item whitespace-nowrap text-xs md:text-base"
-          onClick={() => setShowRules(true)}
-        >
+        <button className="nav-item whitespace-nowrap text-xs md:text-base" onClick={() => setShowRules(true)}>
           القواعد
         </button>
-        <a 
-          href="http://instagram.com/amreahmed_" 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="nav-item whitespace-nowrap text-xs md:text-base"
-        >
+        <a
+          href="http://instagram.com/amreahmed_"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="nav-item whitespace-nowrap text-xs md:text-base">
           المطور
         </a>
-        <button 
-          className="nav-item whitespace-nowrap text-xs md:text-base"
-          onClick={resetGame}
-        >
+        <button className="nav-item whitespace-nowrap text-xs md:text-base" onClick={resetGame}>
           الرئيسية
         </button>
       </nav>
@@ -192,10 +190,7 @@ function App() {
           <div className="glass-panel w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="p-4 flex justify-between items-center border-b border-white/20">
               <h2 className="text-xl text-white">قواعد اللعبه</h2>
-              <button 
-                className="text-white hover:text-red-400 transition-colors"
-                onClick={() => setShowRules(false)}
-              >
+              <button className="text-white hover:text-red-400 transition-colors" onClick={() => setShowRules(false)}>
                 <X size={24} />
               </button>
             </div>
@@ -209,8 +204,7 @@ function App() {
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                  className="rounded-lg"
-                ></iframe>
+                  className="rounded-lg"></iframe>
               </div>
             </div>
           </div>
@@ -223,10 +217,7 @@ function App() {
           <div className="glass-panel w-full max-w-2xl max-h-[80vh] overflow-y-auto">
             <div className="p-4 flex justify-between items-center border-b border-white/20">
               <h2 className="text-xl text-white">سجل المباريات</h2>
-              <button 
-                className="text-white hover:text-red-400 transition-colors"
-                onClick={() => setShowHistory(false)}
-              >
+              <button className="text-white hover:text-red-400 transition-colors" onClick={() => setShowHistory(false)}>
                 <X size={24} />
               </button>
             </div>
@@ -247,10 +238,11 @@ function App() {
                                 <span className="text-white">{player.name || `لاعب ${idx + 1}`}</span>
                                 <span className="flex items-center">
                                   {getRankIcon(player.rank || 0)}
-                                  <span className={`
-                                    ${player.rank === 1 ? 'text-yellow-400' : ''}
-                                    ${player.rank === 2 ? 'text-gray-300' : ''}
-                                    ${player.rank === 3 ? 'text-orange-400' : ''}
+                                  <span
+                                    className={`
+                                    ${player.rank === 1 ? "text-yellow-400" : ""}
+                                    ${player.rank === 2 ? "text-gray-300" : ""}
+                                    ${player.rank === 3 ? "text-orange-400" : ""}
                                     text-white
                                   `}>
                                     {player.rank}
@@ -280,10 +272,11 @@ function App() {
                                   <td className="text-center p-2">
                                     <span className="flex items-center justify-center">
                                       {getRankIcon(player.rank || 0)}
-                                      <span className={`
-                                        ${player.rank === 1 ? 'text-yellow-400' : ''}
-                                        ${player.rank === 2 ? 'text-gray-300' : ''}
-                                        ${player.rank === 3 ? 'text-orange-400' : ''}
+                                      <span
+                                        className={`
+                                        ${player.rank === 1 ? "text-yellow-400" : ""}
+                                        ${player.rank === 2 ? "text-gray-300" : ""}
+                                        ${player.rank === 3 ? "text-orange-400" : ""}
                                         text-white
                                       `}>
                                         {player.rank}
@@ -291,17 +284,14 @@ function App() {
                                     </span>
                                   </td>
                                 </tr>
-                            ))}
+                              ))}
                           </tbody>
                         </table>
                       </div>
                     </div>
                   ))}
                   <div className="flex justify-center mt-4">
-                    <button 
-                      className="purple-button"
-                      onClick={clearHistory}
-                    >
+                    <button className="purple-button" onClick={clearHistory}>
                       مسح السجل
                     </button>
                   </div>
@@ -319,21 +309,19 @@ function App() {
         <div className="glass-panel p-4 md:p-8 mb-4 md:mb-8">
           <h2 className="text-xl md:text-2xl text-white text-center mb-4 md:mb-6">كم عدد اللاعبين؟</h2>
           <div className="relative">
-            <button 
+            <button
               className="w-full bg-white/20 text-white p-3 rounded-lg text-right"
-              onClick={() => setShowDropdown(!showDropdown)}
-            >
-              {playerCount ? playerOptions[playerCount - 2] : 'اختر عدد اللاعبين'}
+              onClick={() => setShowDropdown(!showDropdown)}>
+              {playerCount ? playerOptions[playerCount - 2] : "اختر عدد اللاعبين"}
             </button>
-            
+
             {showDropdown && (
               <div className="absolute w-full mt-2 bg-white/20 backdrop-blur-md rounded-lg overflow-hidden z-10">
                 {playerOptions.map((option, index) => (
                   <button
                     key={index}
                     className="w-full text-right p-3 text-white hover:bg-white/10 transition-all"
-                    onClick={() => handlePlayerCountSelect(index + 2)}
-                  >
+                    onClick={() => handlePlayerCountSelect(index + 2)}>
                     {option}
                   </button>
                 ))}
@@ -348,10 +336,8 @@ function App() {
         <div className="glass-panel p-2 md:p-8">
           {/* Mobile View */}
           <div className="md:hidden space-y-4">
-            {players
-              .sort((a, b) => (a.rank || 999) - (b.rank || 999))
-              .map((player, playerIndex) => (
-              <div key={playerIndex} className={`glass-panel p-4 ${player.rank === 1 ? 'bg-white/10' : ''}`}>
+            {players.map((player, playerIndex) => (
+              <div key={playerIndex} className={`glass-panel p-4 ${player.rank === 1 ? "bg-white/10" : ""}`}>
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-2">
                     <input
@@ -364,10 +350,11 @@ function App() {
                     {player.rank && (
                       <div className="flex items-center gap-1">
                         {getRankIcon(player.rank)}
-                        <span className={`
-                          ${player.rank === 1 ? 'text-yellow-400' : ''}
-                          ${player.rank === 2 ? 'text-gray-300' : ''}
-                          ${player.rank === 3 ? 'text-orange-400' : ''}
+                        <span
+                          className={`
+                          ${player.rank === 1 ? "text-yellow-400" : ""}
+                          ${player.rank === 2 ? "text-gray-300" : ""}
+                          ${player.rank === 3 ? "text-orange-400" : ""}
                           text-white font-bold
                         `}>
                           {player.rank}
@@ -375,19 +362,18 @@ function App() {
                       </div>
                     )}
                   </div>
-                  <div className="text-white font-bold">
-                    المجموع: {player.total}
-                  </div>
+                  <div className="text-white font-bold">المجموع: {player.total}</div>
                 </div>
                 <div className="grid grid-cols-5 gap-2">
                   {player.rounds.map((score, roundIndex) => (
                     <div key={roundIndex} className="space-y-1">
                       <div className="text-white/60 text-center text-xs">
-                        {roundIndex + 1}{roundIndex === totalRounds - 1 && <span className="text-yellow-400">*</span>}
+                        {roundIndex + 1}
+                        {roundIndex === totalRounds - 1 && <span className="text-yellow-400">*</span>}
                       </div>
                       <input
                         type="number"
-                        value={score || ''}
+                        value={score || ""}
                         onChange={(e) => updateScore(playerIndex, roundIndex + 1, parseInt(e.target.value) || 0)}
                         className="w-full bg-white/5 text-white text-center p-2 rounded focus:outline-none focus:bg-white/10"
                         placeholder="0"
@@ -416,10 +402,8 @@ function App() {
                 </tr>
               </thead>
               <tbody>
-                {players
-                  .sort((a, b) => (a.rank || 999) - (b.rank || 999))
-                  .map((player, playerIndex) => (
-                  <tr key={playerIndex} className={player.rank === 1 ? 'bg-white/5' : ''}>
+                {players.map((player, playerIndex) => (
+                  <tr key={playerIndex} className={player.rank === 1 ? "bg-white/5" : ""}>
                     <td className="table-cell p-0">
                       <input
                         type="text"
@@ -433,7 +417,7 @@ function App() {
                       <td key={roundIndex} className="table-cell p-0">
                         <input
                           type="number"
-                          value={score || ''}
+                          value={score || ""}
                           onChange={(e) => updateScore(playerIndex, roundIndex + 1, parseInt(e.target.value) || 0)}
                           className="w-full h-full bg-transparent text-white text-center p-3 focus:outline-none"
                           placeholder="0"
@@ -445,10 +429,11 @@ function App() {
                       {player.rank && (
                         <span className="flex items-center justify-center">
                           {getRankIcon(player.rank)}
-                          <span className={`
-                            ${player.rank === 1 ? 'text-yellow-400' : ''}
-                            ${player.rank === 2 ? 'text-gray-300' : ''}
-                            ${player.rank === 3 ? 'text-orange-400' : ''}
+                          <span
+                            className={`
+                            ${player.rank === 1 ? "text-yellow-400" : ""}
+                            ${player.rank === 2 ? "text-gray-300" : ""}
+                            ${player.rank === 3 ? "text-orange-400" : ""}
                           `}>
                             {player.rank}
                           </span>
@@ -462,10 +447,7 @@ function App() {
           </div>
 
           <div className="flex justify-center mt-4 md:mt-8">
-            <button 
-              className="purple-button"
-              onClick={resetGame}
-            >
+            <button className="purple-button" onClick={resetGame}>
               إعادة تعيين
             </button>
           </div>
