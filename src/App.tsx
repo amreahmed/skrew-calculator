@@ -84,27 +84,25 @@ function App() {
     });
   };
 
-  const updateScore = (playerIndex: number, round: number, score: number) => {
-    setPlayers((prevPlayers) => {
-      const newPlayers = [...prevPlayers];
-      newPlayers[playerIndex] = {
-        ...newPlayers[playerIndex],
-        rounds: newPlayers[playerIndex].rounds.map((r, i) => (i === round - 1 ? score : r)),
-      };
+const updateScore = (playerIndex: number, round: number, score: number) => {
+  setPlayers((prevPlayers) => {
+    const newPlayers = [...prevPlayers];
+    newPlayers[playerIndex] = {
+      ...newPlayers[playerIndex],
+      rounds: newPlayers[playerIndex].rounds.map((r, i) => 
+        i === round - 1 ? score : r
+      ),
+    };
 
-      // Update total score
-      newPlayers[playerIndex].total = newPlayers[playerIndex].rounds.reduce((acc, score, idx) => {
-        return acc + (idx === totalRounds - 1 ? score * 2 : score);
-      }, 0);
+    // Update total score
+    newPlayers[playerIndex].total = newPlayers[playerIndex].rounds.reduce((acc, s, idx) => {
+      return acc + (idx === totalRounds - 1 ? s * 2 : s);
+    }, 0);
 
-      // Only update rankings if the round is complete
-      if (isRoundComplete(round, newPlayers)) {
-        return updateRankings(newPlayers);
-      }
+    return updateRankings(newPlayers);
+  });
+};
 
-      return newPlayers;
-    });
-  };
 
   const updatePlayerName = (playerIndex: number, newName: string) => {
     setPlayers((prevPlayers) => {
@@ -415,13 +413,17 @@ function App() {
                     </td>
                     {player.rounds.map((score, roundIndex) => (
                       <td key={roundIndex} className="table-cell p-0">
-                        <input
-                          type="number"
-                          value={score || ""}
-                          onChange={(e) => updateScore(playerIndex, roundIndex + 1, parseInt(e.target.value) || 0)}
-                          className="w-full h-full bg-transparent text-white text-center p-3 focus:outline-none"
-                          placeholder="0"
-                        />
+<input
+  type="number"
+  value={score ?? ""} // Use empty string if score is null/undefined
+  onChange={(e) => {
+    const value = e.target.value === "" ? null : parseInt(e.target.value, 10);
+    updateScore(playerIndex, roundIndex + 1, value);
+  }}
+  className="w-full bg-white/5 text-white text-center p-2 rounded focus:outline-none focus:bg-white/10"
+/>
+
+
                       </td>
                     ))}
                     <td className="table-cell font-bold">{player.total}</td>
